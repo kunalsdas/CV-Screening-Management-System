@@ -1,0 +1,375 @@
+{
+  "name": "1stop workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"is_qualified\": { \"type\": \"boolean\" },\n    \"full_name\": { \"type\": \"string\" },\n    \"email\": { \"type\": \"string\" },\n    \"phone_number\": { \"type\": \"string\" },\n    \"linkedin\": { \"type\": \"string\" },\n    \"location\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"city\": { \"type\": \"string\" },\n        \"country\": { \"type\": \"string\" }\n      },\n      \"required\": [\"city\", \"country\"]\n    },\n    \"personal_summary\": { \"type\": \"string\" },\n    \"total_experience_years\": { \"type\": \"integer\", \"minimum\": 0 }, \n    \"shortest_job_duration\": { \"type\": \"string\" },\n    \"longest_job_duration\": { \"type\": \"string\" },\n    \"employment_gap\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"exists\": { \"type\": \"string\" },\n        \"duration\": { \"type\": \"string\" }\n      }\n    },\n    \"job_switch_frequency\": { \"type\": \"string\" },\n    \"career_progression\": { \"type\": \"string\" },\n    \"current_job_time\": { \"type\": \"string\" },\n    \"current_company\": { \"type\": \"string\" },\n    \"last_job_title\": { \"type\": \"string\" },\n    \"last_company\": { \"type\": \"string\" },\n    \"education\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"level\": { \"type\": \"string\" },\n        \"university\": { \"type\": \"string\" }\n      }\n    },\n    \"key_skills\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"certifications\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"projects\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"title\": { \"type\": \"string\" },\n          \"description\": { \"type\": \"string\" }\n        }\n      }\n    },\n    \"ATC_Score\": { \"type\": \"integer\", \"minimum\": 0 },  \n    \"Match_Score\": { \"type\": \"integer\", \"minimum\": 0 },  \n    \"relevance_summary\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"positive\": { \"type\": \"string\" },\n        \"negative\": { \"type\": \"string\" }\n      }\n    }\n  },\n  \"required\": [\"full_name\", \"total_experience_years\", \"Match_Score\"]\n}\n"
+      },
+      "id": "7b989839-0af5-4adc-b900-419cf024e6d7",
+      "name": "Structured Output Parser1",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        340,
+        160
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Below is the candidate's resume data:  \nResume Data: {{$node[\"Code1\"].json[\"cvTexts\"]}}  \n\nAnd here is the job description for the role:  \nJob Data: {{ JSON.stringify($node[\"Postgres\"].json, null, 2) }} \n\nBased on this information, answer the following:  \n\n1. **Is the candidate qualified for the role?** (`yes/no` with a brief reason)  \n2. **Candidate Details:**  \n   - Full Name  \n   - Email Address  \n   - Phone Number  \n   - LinkedIn  \n   - Location (City, Country)  \n3. **Personal Summary (Extract from resume)**  \n4. **Total Years of Experience**  \n5. **Shortest & Longest Job Duration**  \n6. **Is there any employment gap?** If yes, duration?  \n7. **How frequently has the candidate switched jobs?**  \n8. **Career Progression (e.g., Junior → Senior roles)**  \n9. **Current Job Duration & Company Name**  \n10. **Last Job Title & Company Name**  \n11. **Education Level & University**  \n12. **Key Skills (from resume) & Certifications**  \n13. **Projects (if mentioned)**  \n14. **ATC Score (How aligned is the candidate to the role?)**  \n15. **Match Score (on a scale of 1-100)**  \n16. **Brief Summary: Why is this candidate a good fit or not for this position?**  \n\nReturn the response in **JSON format**.\n",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an AI resume screening assistant. Your task is to analyze a candidate's resume against a job description and provide structured insights about their fit for the role."
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=Below is the candidate's resume data:   Resume Data   And here is the job description for the role:   Job Data  Based on this information, answer the following:    1. **Is the candidate qualified for the role?** (`yes/no` with a brief reason)   2. **Candidate Details:**      - Full Name      - Email Address      - Phone Number      - LinkedIn      - Location (City, Country)   3. **Personal Summary (Extract from resume)**   4. **Total Years of Experience**   5. **Shortest & Longest Job Duration**   6. **Is there any employment gap?** If yes, duration?   7. **How frequently has the candidate switched jobs?**   8. **Career Progression (e.g., Junior → Senior roles)**   9. **Current Job Duration & Company Name**   10. **Last Job Title & Company Name**   11. **Education Level & University**   12. **Key Skills (from resume) & Certifications**   13. **Projects (if mentioned)**   14. **ATC Score (How aligned is the candidate to the role?)**   15. **Match Score (on a scale of 1-100)**   16. **Brief Summary: Why is this candidate a good fit or not for this position?**    Return the response in **JSON format**."
+            }
+          ]
+        }
+      },
+      "id": "a5a34064-d044-4a9d-aa48-8de22c08a601",
+      "name": "Candidate Resume Analyser1",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        140,
+        -65
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "onestop",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        -65
+      ],
+      "id": "2c840540-0f8c-48d7-b338-4ae6f3abb31c",
+      "name": "Webhook",
+      "webhookId": "fff5a37e-038f-4aa7-afcc-8acdfd4b299e"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        516,
+        -65
+      ],
+      "id": "20d13989-48b4-4b1d-a72d-aff14491866c",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -140
+      ],
+      "id": "dcd725c2-859d-44de-a058-d3075d0bb91c",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet cvTexts = {}; \n\nitems.forEach((item, key) => {\n  cvTexts += `CV ${key + 1}:  ${item.json.text} \\n\\n`;\n});\n\nreturn { cvTexts };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        -140
+      ],
+      "id": "58171e09-2df3-48b2-8317-98fcd18d5a5c",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.0-flash-exp:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        168,
+        155
+      ],
+      "id": "dd112373-d60b-475d-85f3-74a913df5c3a",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO \"resumes\" (\n    is_qualified, full_name, email, phone_number, linkedin, location, \n    total_experience_years, shortest_job_duration, longest_job_duration, employment_gap,\n  job_switch_frequency, career_progression, current_job_title, current_company, \n    last_job_title, last_company, education, skills, match_score, job_title, created_at\n) VALUES (\n    {{ $json[\"output\"][\"is_qualified\"] ? 'TRUE' : 'FALSE' }}, \n    '{{ $json[\"output\"][\"full_name\"].replace(\"'\", \"''\") }}', \n    {{ $json[\"output\"][\"email\"] ? `'${$json[\"output\"][\"email\"].replace(\"'\", \"''\")}'` : 'NULL' }}, \n    {{ $json[\"output\"][\"phone_number\"] ? `'${$json[\"output\"][\"phone_number\"].replace(\"'\", \"''\")}'` : 'NULL' }}, \n    {{ $json[\"output\"][\"linkedin\"] ? `'${$json[\"output\"][\"linkedin\"].replace(\"'\", \"''\")}'` : 'NULL' }}, \n    '{{ JSON.stringify($json[\"output\"][\"location\"]).replace(\"'\", \"''\") }}'::jsonb, \n    {{ $json[\"output\"][\"total_experience_years\"] }}, \n\n  '{{ $json[\"output\"][\"shortest_job_duration\"] }}', \n    '{{ $json[\"output\"][\"longest_job_duration\"] }}', \n    '{{ JSON.stringify($json[\"output\"][\"employment_gap\"]).replace(\"'\", \"''\") }}'::jsonb, \n\n   '{{ $json[\"output\"][\"job_switch_frequency\"] }}', \n    '{{ $json[\"output\"][\"career_progression\"] }}', \n    {{ $json[\"output\"][\"current_job_title\"] ? `'${$json[\"output\"][\"current_job_title\"].replace(\"'\", \"''\")}'` : 'NULL' }}, \n    '{{ $json[\"output\"][\"current_company\"].replace(\"'\", \"''\") }}', \n    '{{ $json[\"output\"][\"last_job_title\"].replace(\"'\", \"''\") }}', \n\n   '{{ $json[\"output\"][\"last_company\"].replace(\"'\", \"''\") }}', \n    '{{ JSON.stringify($json[\"output\"][\"education\"]).replace(\"'\", \"''\") }}'::jsonb, \n    '{{ JSON.stringify($json[\"output\"][\"key_skills\"]).replace(\"'\", \"''\") }}'::jsonb, \n\n    {{ $json[\"output\"][\"Match_Score\"] ? $json[\"output\"][\"Match_Score\"] : 'NULL' }}, \n    '{{$node[\"Webhook\"].json[\"body\"][\"jobTitle\"]}}',\n    NOW()\n);\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        736,
+        -65
+      ],
+      "id": "527f6fe1-95c8-440c-84d0-32a5758271ed",
+      "name": "Postgres1",
+      "credentials": {
+        "postgres": {
+          "id": "",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "82b97959-a659-48b4-9f7e-7ee47fb60aa0",
+      "name": "Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -960,
+        -65
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1gBlfTmwZrF-ueeJMZ0p73j8VgwXIkOB8",
+            "mode": "list",
+            "cachedResultName": "One-stop solution",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1gBlfTmwZrF-ueeJMZ0p73j8VgwXIkOB8"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1180,
+        -65
+      ],
+      "id": "d4b3e97e-e7d6-4ecb-a1c3-93786b614be6",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -740,
+        -65
+      ],
+      "id": "1321ca2a-4a44-4eb3-8e57-5595e32d7fa9",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM job_listings WHERE id = '{{$node[\"Webhook\"].json[\"body\"][\"jobId\"]}}';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -80,
+        -140
+      ],
+      "id": "9b235b48-e044-409c-8ca1-2b6f633ad5b1",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Candidate Resume Analyser1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidate Resume Analyser1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Postgres1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Candidate Resume Analyser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres": {
+      "main": [
+        [
+          {
+            "node": "Candidate Resume Analyser1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1e16e9b1-fe31-4d08-b50e-1d72bdab6dcc",
+  "meta": {
+    "instanceId": "943f9a054eee28676356e82892d6855368de13e11ba61349d23baad09fd63660"
+  },
+  "id": "FRRK6jChRUVMkIEp",
+  "tags": []
+}
